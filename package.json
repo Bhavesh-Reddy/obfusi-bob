@@ -1,0 +1,21 @@
+{
+  "name": "obfusi-bob",
+  "version": "1.0.0",
+  "description": "Intelligent LLVM-based obfuscation framework with RAG-powered recommendations",
+  "type": "module",
+  "scripts": {
+    "bridge": "node dashboard-bridge.js",
+    "build": "cd mcp-server && npm run build",
+    "test": "cd mcp-server && npm test"
+  },
+  "keywords": [
+    "llvm",
+    "obfuscation",
+    "security",
+    "mcp",
+    "rag",
+    "watsonx"
+  ],
+  "author": "IBM Bob Dev Day Hackathon Team",
+  "license": "MIT"
+}

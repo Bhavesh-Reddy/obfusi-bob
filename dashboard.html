@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obfusi-Bob - LLVM Obfuscation Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP Animation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'royal-blue': '#4169E1',
+                        'gemini-blue': '#4285F4',
+                        'neutral-bg': '#FAFAFA',
+                        'neutral-border': '#E5E7EB',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+        }
+        
+        /* Gemini-style sparkle animation */
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1) rotate(180deg); }
+        }
+        
+        .sparkle {
+            animation: sparkle 2s ease-in-out infinite;
+        }
+        
+        /* Terminal styling */
+        .terminal {
+            background: #1E1E1E;
+            color: #D4D4D4;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .terminal-line {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        /* Control Flow Graph Node */
+        .cfg-node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .cfg-node:hover {
+            filter: brightness(1.2);
+        }
+        
+        /* Complexity meter */
+        .complexity-bar {
+            transition: width 0.5s ease, background-color 0.5s ease;
+        }
+        
+        /* Card hover effect */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Loading spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Pulse animation for status indicators */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    
+    <!-- Header -->
+    <header class="mb-12">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                        Obfusi-Bob
+                        <span class="text-royal-blue">Dashboard</span>
+                    </h1>
+                    <p class="text-gray-600">LLVM-Based Obfuscation Framework • IBM Bob Dev Day Hackathon</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Status Indicator -->
+                    <div class="flex items-center space-x-2">
+                        <div id="status-indicator" class="w-3 h-3 rounded-full bg-green-500 pulse-glow"></div>
+                        <span id="status-text" class="text-sm text-gray-600">MCP Server Connected</span>
+                    </div>
+                    <!-- Loading Sparkle -->
+                    <div id="loading-sparkle" class="hidden">
+                        <svg class="w-8 h-8 text-gemini-blue sparkle" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="max-w-7xl mx-auto">
+        
+        <!-- Top Row: Control Panel & Metrics -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            
+            <!-- Control Panel -->
+            <div class="lg:col-span-1 bg-white rounded-2xl shadow-lg p-8 card-hover">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Control Panel</h2>
+                
+                <!-- IR File Input -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">IR File Path</label>
+                    <input 
+                        type="text" 
+                        id="ir-file-path" 
+                        value="test-samples/simple.ll"
+                        class="w-full px-4 py-3 border border-neutral-border rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent transition"
+                        placeholder="path/to/file.ll"
+                    >
+                </div>
+                
+                <!-- Obfuscation Pass Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Obfuscation Pass</label>
+                    <select 
+                        id="pass-selection" 
+                        class="w-full px-4 py-3 border border-neutral-border rounded-lg focus:ring-2 focus:ring-royal-blue focus:border-transparent transition"
+                    >
+                        <option value="flatten">Control Flow Flattening</option>
+                        <option value="bogus">Bogus Code Insertion</option>
+                        <option value="encrypt">String Encryption</option>
+                        <option value="mem2reg">Memory to Register</option>
+                        <option value="instcombine">Instruction Combine</option>
+                    </select>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="space-y-3">
+                    <button 
+                        id="btn-analyze" 
+                        class="w-full bg-royal-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition transform hover:scale-105 active:scale-95"
+                    >
+                        📊 Analyze IR Structure
+                    </button>
+                    
+                    <button 
+                        id="btn-obfuscate" 
+                        class="w-full bg-gradient-to-r from-purple-600 to-royal-blue text-white px-6 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition transform hover:scale-105 active:scale-95"
+                    >
+                        🔒 Obfuscate Code
+                    </button>
+                    
+                    <button 
+                        id="btn-rag-consult" 
+                        class="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition transform hover:scale-105 active:scale-95"
+                    >
+                        🤖 RAG Consultant
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Metrics Cards -->
+            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Complexity Score -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700">Complexity Score</h3>
+                        <span class="text-3xl">📈</span>
+                    </div>
+                    <div class="mb-4">
+                        <div id="complexity-value" class="text-5xl font-bold text-royal-blue">0</div>
+                        <div class="text-sm text-gray-500 mt-1">Cyclomatic Complexity</div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div id="complexity-bar" class="complexity-bar bg-royal-blue h-3 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <!-- Functions Count -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700">Functions</h3>
+                        <span class="text-3xl">⚙️</span>
+                    </div>
+                    <div class="mb-4">
+                        <div id="functions-count" class="text-5xl font-bold text-purple-600">0</div>
+                        <div class="text-sm text-gray-500 mt-1">Total Functions</div>
+                    </div>
+                    <div id="functions-list" class="text-sm text-gray-600 space-y-1">
+                        <div class="text-gray-400">No functions analyzed yet</div>
+                    </div>
+                </div>
+                
+                <!-- Instructions Count -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700">Instructions</h3>
+                        <span class="text-3xl">💻</span>
+                    </div>
+                    <div class="mb-4">
+                        <div id="instructions-count" class="text-5xl font-bold text-green-600">0</div>
+                        <div class="text-sm text-gray-500 mt-1">Total Instructions</div>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm">
+                        <span class="text-gray-600">Basic Blocks:</span>
+                        <span id="basic-blocks-count" class="font-semibold text-gray-900">0</span>
+                    </div>
+                </div>
+                
+                <!-- Security Level -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700">Security Level</h3>
+                        <span class="text-3xl">🛡️</span>
+                    </div>
+                    <div class="mb-4">
+                        <div id="security-level" class="text-5xl font-bold text-red-600">Low</div>
+                        <div class="text-sm text-gray-500 mt-1">Protection Status</div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <div class="flex-1 h-2 bg-red-200 rounded"></div>
+                        <div class="flex-1 h-2 bg-gray-200 rounded"></div>
+                        <div class="flex-1 h-2 bg-gray-200 rounded"></div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Middle Row: Control Flow Visualizer -->
+        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 card-hover">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-semibold text-gray-900">Control Flow Visualizer</h2>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600">Interactive Graph</span>
+                    <button id="btn-reset-graph" class="text-sm text-royal-blue hover:text-blue-700 font-medium">
+                        Reset View
+                    </button>
+                </div>
+            </div>
+            
+            <!-- SVG Control Flow Graph -->
+            <div class="bg-neutral-bg rounded-xl p-8 min-h-[400px] flex items-center justify-center">
+                <svg id="cfg-graph" width="100%" height="400" viewBox="0 0 800 400">
+                    <!-- Original Control Flow (Simple) -->
+                    <g id="cfg-original">
+                        <!-- Entry Node -->
+                        <g class="cfg-node" data-node="entry">
+                            <rect x="350" y="20" width="100" height="60" rx="8" fill="#4169E1" opacity="0.9"/>
+                            <text x="400" y="55" text-anchor="middle" fill="white" font-size="14" font-weight="600">Entry</text>
+                        </g>
+                        
+                        <!-- Function Nodes -->
+                        <g class="cfg-node" data-node="func1">
+                            <rect x="200" y="120" width="120" height="60" rx="8" fill="#8B5CF6" opacity="0.9"/>
+                            <text x="260" y="155" text-anchor="middle" fill="white" font-size="14" font-weight="600">Function A</text>
+                        </g>
+                        
+                        <g class="cfg-node" data-node="func2">
+                            <rect x="480" y="120" width="120" height="60" rx="8" fill="#8B5CF6" opacity="0.9"/>
+                            <text x="540" y="155" text-anchor="middle" fill="white" font-size="14" font-weight="600">Function B</text>
+                        </g>
+                        
+                        <!-- Basic Blocks -->
+                        <g class="cfg-node" data-node="bb1">
+                            <rect x="150" y="220" width="100" height="60" rx="8" fill="#10B981" opacity="0.9"/>
+                            <text x="200" y="255" text-anchor="middle" fill="white" font-size="14" font-weight="600">Block 1</text>
+                        </g>
+                        
+                        <g class="cfg-node" data-node="bb2">
+                            <rect x="350" y="220" width="100" height="60" rx="8" fill="#10B981" opacity="0.9"/>
+                            <text x="400" y="255" text-anchor="middle" fill="white" font-size="14" font-weight="600">Block 2</text>
+                        </g>
+                        
+                        <g class="cfg-node" data-node="bb3">
+                            <rect x="550" y="220" width="100" height="60" rx="8" fill="#10B981" opacity="0.9"/>
+                            <text x="600" y="255" text-anchor="middle" fill="white" font-size="14" font-weight="600">Block 3</text>
+                        </g>
+                        
+                        <!-- Exit Node -->
+                        <g class="cfg-node" data-node="exit">
+                            <rect x="350" y="320" width="100" height="60" rx="8" fill="#EF4444" opacity="0.9"/>
+                            <text x="400" y="355" text-anchor="middle" fill="white" font-size="14" font-weight="600">Exit</text>
+                        </g>
+                        
+                        <!-- Edges -->
+                        <g id="cfg-edges" stroke="#94A3B8" stroke-width="2" fill="none" opacity="0.6">
+                            <path d="M 400 80 L 260 120" marker-end="url(#arrowhead)"/>
+                            <path d="M 400 80 L 540 120" marker-end="url(#arrowhead)"/>
+                            <path d="M 260 180 L 200 220" marker-end="url(#arrowhead)"/>
+                            <path d="M 260 180 L 400 220" marker-end="url(#arrowhead)"/>
+                            <path d="M 540 180 L 400 220" marker-end="url(#arrowhead)"/>
+                            <path d="M 540 180 L 600 220" marker-end="url(#arrowhead)"/>
+                            <path d="M 200 280 L 400 320" marker-end="url(#arrowhead)"/>
+                            <path d="M 400 280 L 400 320" marker-end="url(#arrowhead)"/>
+                            <path d="M 600 280 L 400 320" marker-end="url(#arrowhead)"/>
+                        </g>
+                    </g>
+                    
+                    <!-- Arrow marker definition -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#94A3B8"/>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+            
+            <div class="mt-4 flex items-center justify-center space-x-6 text-sm">
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 rounded bg-blue-600"></div>
+                    <span class="text-gray-600">Entry/Exit</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 rounded bg-purple-600"></div>
+                    <span class="text-gray-600">Functions</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 rounded bg-green-600"></div>
+                    <span class="text-gray-600">Basic Blocks</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bottom Row: Live Terminal & RAG Recommendations -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Live Terminal -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                <div class="bg-gray-800 px-6 py-4 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-white">Live Terminal</h2>
+                    <div class="flex space-x-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                </div>
+                <div id="terminal" class="terminal p-6 h-96 overflow-y-auto">
+                    <div class="terminal-line">$ Obfusi-Bob MCP Server initialized...</div>
+                    <div class="terminal-line">$ Workspace: C:/Users/bvnav/Desktop/obfusi-bob/mcp-server</div>
+                    <div class="terminal-line">$ Available tools: read_ir_file, analyze_ir_structure, execute_obfuscation_pass</div>
+                    <div class="terminal-line">$ Ready to receive commands...</div>
+                    <div class="terminal-line">$ <span class="text-green-400">●</span> System operational</div>
+                </div>
+            </div>
+            
+            <!-- RAG Recommendations -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-900">RAG Consultant</h2>
+                    <span class="text-3xl">🤖</span>
+                </div>
+                
+                <div id="rag-recommendations" class="space-y-4">
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                    AI
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900 mb-2">Waiting for Analysis...</h3>
+                                <p class="text-sm text-gray-600">
+                                    Click "RAG Consultant" to get AI-powered recommendations based on 15+ research papers.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-sm text-gray-500 space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>IBM Granite 3.0 Model</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>15+ Research Papers</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Context-Aware Analysis</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+    </main>
+    
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto mt-12 text-center text-gray-500 text-sm">
+        <p>Obfusi-Bob • IBM Bob Dev Day Hackathon 2026 • "Turn idea into impact faster"</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Initialize GSAP
+        gsap.registerPlugin();
+        
+        // State management
+        const state = {
+            irData: null,
+            analysisData: null,
+            isObfuscated: false,
+            complexity: 0
+        };
+        
+        // DOM Elements
+        const elements = {
+            irFilePath: document.getElementById('ir-file-path'),
+            passSelection: document.getElementById('pass-selection'),
+            btnAnalyze: document.getElementById('btn-analyze'),
+            btnObfuscate: document.getElementById('btn-obfuscate'),
+            btnRAGConsult: document.getElementById('btn-rag-consult'),
+            btnResetGraph: document.getElementById('btn-reset-graph'),
+            terminal: document.getElementById('terminal'),
+            complexityValue: document.getElementById('complexity-value'),
+            complexityBar: document.getElementById('complexity-bar'),
+            functionsCount: document.getElementById('functions-count'),
+            functionsList: document.getElementById('functions-list'),
+            instructionsCount: document.getElementById('instructions-count'),
+            basicBlocksCount: document.getElementById('basic-blocks-count'),
+            securityLevel: document.getElementById('security-level'),
+            ragRecommendations: document.getElementById('rag-recommendations'),
+            loadingSparkle: document.getElementById('loading-sparkle'),
+            statusIndicator: document.getElementById('status-indicator'),
+            statusText: document.getElementById('status-text')
+        };
+        
+        // Initialize terminal animation
+        function initTerminal() {
+            const lines = document.querySelectorAll('.terminal-line');
+            gsap.to(lines, {
+                opacity: 1,
+                y: 0,
+                duration: 0.5,
+                stagger: 0.1,
+                ease: 'power2.out'
+            });
+        }
+        
+        // Add terminal log
+        function addTerminalLog(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : '→';
+            const color = type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400';
+            
+            line.innerHTML = `<span class="${color}">[${timestamp}]</span> ${icon} ${message}`;
+            elements.terminal.appendChild(line);
+            
+            // Animate new line
+            gsap.from(line, {
+                opacity: 0,
+                y: 10,
+                duration: 0.3,
+                ease: 'power2.out'
+            });
+            
+            // Auto-scroll
+            elements.terminal.scrollTop = elements.terminal.scrollHeight;
+        }
+        
+        // Show loading state
+        function showLoading(show = true) {
+            if (show) {
+                elements.loadingSparkle.classList.remove('hidden');
+                elements.statusText.textContent = 'Processing...';
+            } else {
+                elements.loadingSparkle.classList.add('hidden');
+                elements.statusText.textContent = 'MCP Server Connected';
+            }
+        }
+        
+        // Update metrics
+        function updateMetrics(data) {
+            if (!data) return;
+            
+            // Calculate complexity
+            const complexity = data.functions.reduce((sum, fn) => sum + fn.basicBlocks + fn.instructions, 0);
+            state.complexity = complexity;
+            
+            // Animate complexity value
+            gsap.to(elements.complexityValue, {
+                textContent: complexity,
+                duration: 1,
+                snap: { textContent: 1 },
+                ease: 'power2.out'
+            });
+            
+            // Animate complexity bar
+            const barWidth = Math.min((complexity / 50) * 100, 100);
+            gsap.to(elements.complexityBar, {
+                width: `${barWidth}%`,
+                duration: 1,
+                ease: 'power2.out'
+            });
+            
+            // Update functions count
+            gsap.to(elements.functionsCount, {
+                textContent: data.functions.length,
+                duration: 0.8,
+                snap: { textContent: 1 },
+                ease: 'power2.out'
+            });
+            
+            // Update functions list
+            elements.functionsList.innerHTML = data.functions.map(fn => `
+                <div class="flex items-center justify-between py-1">
+                    <span class="font-medium">${fn.name}</span>
+                    <span class="text-xs text-gray-400">${fn.instructions} inst</span>
+                </div>
+            `).join('');
+            
+            // Update instructions count
+            gsap.to(elements.instructionsCount, {
+                textContent: data.totalInstructions,
+                duration: 0.8,
+                snap: { textContent: 1 },
+                ease: 'power2.out'
+            });
+            
+            // Update basic blocks
+            const totalBlocks = data.functions.reduce((sum, fn) => sum + fn.basicBlocks, 0);
+            gsap.to(elements.basicBlocksCount, {
+                textContent: totalBlocks,
+                duration: 0.8,
+                snap: { textContent: 1 },
+                ease: 'power2.out'
+            });
+            
+            // Update security level
+            updateSecurityLevel();
+        }
+        
+        // Update security level based on obfuscation state
+        function updateSecurityLevel() {
+            const level = state.isObfuscated ? 'High' : 'Low';
+            const color = state.isObfuscated ? 'text-green-600' : 'text-red-600';
+            
+            elements.securityLevel.textContent = level;
+            elements.securityLevel.className = `text-5xl font-bold ${color}`;
+        }
+        
+        // Animate Control Flow Graph - Obfuscation Effect
+        function animateObfuscation() {
+            const nodes = document.querySelectorAll('.cfg-node');
+            const edges = document.getElementById('cfg-edges');
+            
+            // Create timeline
+            const tl = gsap.timeline();
+            
+            // Step 1: Shake all nodes
+            tl.to(nodes, {
+                x: () => gsap.utils.random(-10, 10),
+                y: () => gsap.utils.random(-10, 10),
+                duration: 0.3,
+                stagger: 0.05,
+                ease: 'power2.inOut',
+                repeat: 3,
+                yoyo: true
+            });
+            
+            // Step 2: Scramble positions
+            tl.to(nodes, {
+                x: () => gsap.utils.random(-100, 100),
+                y: () => gsap.utils.random(-50, 50),
+                rotation: () => gsap.utils.random(-15, 15),
+                duration: 1,
+                stagger: 0.1,
+                ease: 'power3.out'
+            });
+            
+            // Step 3: Fade and scramble edges
+            tl.to(edges, {
+                opacity: 0.2,
+                duration: 0.5
+            }, '-=0.5');
+            
+            // Step 4: Flatten (bring back to organized but different positions)
+            tl.to(nodes, {
+                x: () => gsap.utils.random(-30, 30),
+                y: () => gsap.utils.random(-20, 20),
+                rotation: 0,
+                duration: 1,
+                stagger: 0.05,
+                ease: 'elastic.out(1, 0.5)'
+            });
+            
+            // Step 5: Restore edges with new opacity
+            tl.to(edges, {
+                opacity: 0.8,
+                duration: 0.5
+            });
+            
+            return tl;
+        }
+        
+        // Reset graph animation
+        function resetGraph() {
+            const nodes = document.querySelectorAll('.cfg-node');
+            const edges = document.getElementById('cfg-edges');
+            
+            gsap.to(nodes, {
+                x: 0,
+                y: 0,
+                rotation: 0,
+                duration: 1,
+                stagger: 0.05,
+                ease: 'elastic.out(1, 0.3)'
+            });
+            
+            gsap.to(edges, {
+                opacity: 0.6,
+                duration: 0.5
+            });
+        }
+        
+        // Call MCP tool via bridge API
+        async function callMCPTool(toolName, args) {
+            addTerminalLog(`Calling MCP tool: ${toolName}`, 'info');
+            addTerminalLog(`Arguments: ${JSON.stringify(args)}`, 'info');
+            
+            try {
+                const response = await fetch('http://localhost:3002/api/tool', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tool: toolName,
+                        args: args
+                    })
+                });
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('Bridge API error:', error);
+                addTerminalLog(`Connection error: ${error.message}`, 'error');
+                
+                // Fallback to mock data if bridge is not running
+                return getMockData(toolName, args);
+            }
+        }
+        
+        // Mock data fallback
+        function getMockData(toolName, args) {
+            if (toolName === 'analyze_ir_structure') {
+                return {
+                    success: true,
+                    data: {
+                        functions: [
+                            { name: 'add', basicBlocks: 2, instructions: 2, hasLoops: false, hasConditionals: false },
+                            { name: 'main', basicBlocks: 2, instructions: 11, hasLoops: false, hasConditionals: false }
+                        ],
+                        globalVariables: [],
+                        totalInstructions: 13,
+                        entryPoint: 'main'
+                    }
+                };
+            } else if (toolName === 'execute_obfuscation_pass') {
+                return {
+                    success: true,
+                    data: {
+                        outputPath: 'test-samples/simple.obfuscated.ll',
+                        executionTime: 150,
+                        success: true
+                    }
+                };
+            }
+            return { success: false, error: 'Tool not implemented' };
+        }
+        
+        // Event Handlers
+        elements.btnAnalyze.addEventListener('click', async () => {
+            showLoading(true);
+            addTerminalLog('Starting IR analysis...', 'info');
+            
+            try {
+                const result = await callMCPTool('analyze_ir_structure', {
+                    irPath: elements.irFilePath.value
+                });
+                
+                if (result.success) {
+                    state.analysisData = result.data;
+                    updateMetrics(result.data);
+                    addTerminalLog(`Analysis complete: ${result.data.functions.length} functions found`, 'success');
+                } else {
+                    addTerminalLog(`Analysis failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                addTerminalLog(`Error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        elements.btnObfuscate.addEventListener('click', async () => {
+            if (!state.analysisData) {
+                addTerminalLog('Please analyze IR first', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            addTerminalLog('Starting obfuscation process...', 'info');
+            
+            // Animate the graph
+            await animateObfuscation();
+            
+            try {
+                const result = await callMCPTool('execute_obfuscation_pass', {
+                    irPath: elements.irFilePath.value,
+                    passName: elements.passSelection.value
+                });
+                
+                if (result.success) {
+                    state.isObfuscated = true;
+                    state.complexity = Math.floor(state.complexity * 1.5); // Increase complexity
+                    updateSecurityLevel();
+                    addTerminalLog(`Obfuscation complete: ${result.data.outputPath}`, 'success');
+                    addTerminalLog(`Execution time: ${result.data.executionTime}ms`, 'info');
+                } else {
+                    addTerminalLog(`Obfuscation failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                addTerminalLog(`Error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        elements.btnRAGConsult.addEventListener('click', async () => {
+            if (!state.analysisData) {
+                addTerminalLog('Please analyze IR first', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            addTerminalLog('Consulting RAG knowledge base...', 'info');
+            
+            try {
+                const result = await callMCPTool('rag_consultant', {
+                    irPath: elements.irFilePath.value
+                });
+                
+                if (result.success && result.data) {
+                    const topRec = result.data.recommendations[0];
+                    const analysis = result.data.analysis;
+                    
+                    const recommendations = `
+                        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100 mb-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                        AI
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900 mb-2">Recommended: ${topRec.technique}</h3>
+                                    <p class="text-sm text-gray-600 mb-3">
+                                        ${topRec.reasoning}
+                                    </p>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-green-600">✓</span>
+                                            <span>Confidence: ${(topRec.confidence * 100).toFixed(0)}%</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-green-600">✓</span>
+                                            <span>Effectiveness: ${(topRec.effectiveness * 100).toFixed(0)}%</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-green-600">✓</span>
+                                            <span>Overhead: ${topRec.overhead}</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-green-600">✓</span>
+                                            <span>Paper: ${topRec.papers[0].title} (${topRec.papers[0].year})</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 text-sm">
+                            <div class="font-semibold text-gray-700 mb-2">Security Analysis:</div>
+                            <div class="space-y-1 text-gray-600">
+                                <div>Code Complexity: ${analysis.codeComplexity}/100</div>
+                                <div>Security Risk: <span class="font-semibold ${analysis.securityRisk === 'high' ? 'text-red-600' : analysis.securityRisk === 'medium' ? 'text-yellow-600' : 'text-green-600'}">${analysis.securityRisk.toUpperCase()}</span></div>
+                                <div>Suggested Pass: <span class="font-mono">${analysis.suggestedPass}</span></div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    elements.ragRecommendations.innerHTML = recommendations;
+                    addTerminalLog('RAG consultation complete', 'success');
+                    addTerminalLog(`Recommended: ${topRec.technique} (${(topRec.confidence * 100).toFixed(0)}% confidence)`, 'success');
+                } else {
+                    addTerminalLog(`RAG consultation failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                addTerminalLog(`Error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        elements.btnResetGraph.addEventListener('click', () => {
+            resetGraph();
+            addTerminalLog('Graph view reset', 'info');
+        });
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            initTerminal();
+            addTerminalLog('Dashboard initialized', 'success');
+            
+            // Add hover effects to CFG nodes
+            document.querySelectorAll('.cfg-node').forEach(node => {
+                node.addEventListener('mouseenter', () => {
+                    gsap.to(node, {
+                        scale: 1.1,
+                        duration: 0.3,
+                        ease: 'power2.out'
+                    });
+                });
+                
+                node.addEventListener('mouseleave', () => {
+                    gsap.to(node, {
+                        scale: 1,
+                        duration: 0.3,
+                        ease: 'power2.out'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

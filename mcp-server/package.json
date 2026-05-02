@@ -1,0 +1,41 @@
+{
+  "name": "obfusi-bob-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for LLVM-based obfuscation framework - IBM Bob Dev Day Hackathon",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "obfusi-bob-server": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp",
+    "llvm",
+    "obfuscation",
+    "security",
+    "compiler",
+    "ibm",
+    "hackathon"
+  ],
+  "author": "Obfusi-Bob Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "rimraf": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
