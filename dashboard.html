@@ -6,614 +6,455 @@
     <title>Obfusi-Bob - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        * {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-        
-        body {
-            background: #f8f9fa;
-            overflow-x: hidden;
-        }
-        
-        /* Sidebar Styles */
-        .sidebar {
-            background: white;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .sidebar-item {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-        }
-        
-        .sidebar-item:hover {
-            background: #f8f9fa;
-            transform: translateX(4px);
-        }
-        
-        .sidebar-item.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .sidebar-item.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: #667eea;
-        }
-        
-        /* Card Styles */
-        .card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .card:hover {
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-            transform: translateY(-2px);
-        }
-        
-        /* Button Styles */
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-secondary {
-            background: white;
-            border: 2px solid #e5e7eb;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .btn-secondary:hover {
-            border-color: #667eea;
-            color: #667eea;
-            transform: translateY(-2px);
-        }
-        
-        /* Progress Bar */
-        .progress-bar {
-            height: 8px;
-            background: #e5e7eb;
-            border-radius: 999px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        /* Status Badge */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 12px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .status-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        
-        .status-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .status-error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        
-        /* Loading States */
-        .skeleton {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s ease-in-out infinite;
-        }
-        
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        
-        /* Modal */
-        .modal-overlay {
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-        
-        /* Tooltip */
-        .tooltip {
-            position: relative;
-        }
-        
-        .tooltip::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(-8px);
-            padding: 8px 12px;
-            background: #1f2937;
-            color: white;
-            border-radius: 8px;
-            font-size: 12px;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-        }
-        
-        .tooltip:hover::after {
-            opacity: 1;
-        }
-        
-        /* Code Block */
-        .code-block {
-            background: #1f2937;
-            color: #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 13px;
-            overflow-x: auto;
-        }
-        
-        /* Fade In Animation */
-        .fade-in {
-            animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Hide scrollbar but keep functionality */
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        * { font-family: 'Inter', sans-serif; }
+        body { background: #f8f9fa; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.3s; }
+        .card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border-radius: 12px; font-weight: 600; transition: all 0.3s; border: none; cursor: pointer; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3); }
+        .btn-secondary { background: white; border: 2px solid #e5e7eb; padding: 12px 24px; border-radius: 12px; font-weight: 600; transition: all 0.3s; cursor: pointer; }
+        .btn-secondary:hover { border-color: #667eea; color: #667eea; }
+        .code-editor { background: #1f2937; color: #e5e7eb; border-radius: 12px; padding: 16px; font-family: 'Monaco', monospace; font-size: 13px; min-height: 300px; overflow: auto; }
+        .status-badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .status-success { background: #d1fae5; color: #065f46; }
+        .status-error { background: #fee2e2; color: #991b1b; }
+        .status-warning { background: #fef3c7; color: #92400e; }
+        .loading { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .file-drop-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 40px; text-align: center; transition: all 0.3s; cursor: pointer; }
+        .file-drop-zone:hover, .file-drop-zone.drag-over { border-color: #667eea; background: #f3f4f6; }
     </style>
 </head>
 <body class="min-h-screen">
-    <!-- Main Container -->
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="sidebar w-64 flex-shrink-0 flex flex-col">
-            <!-- Logo -->
-            <div class="p-6 border-b border-gray-100">
+        <aside class="w-64 bg-white shadow-lg flex flex-col">
+            <div class="p-6 border-b">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                        </svg>
-                    </div>
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold">OB</div>
                     <div>
-                        <h1 class="text-lg font-bold text-gray-900">Obfusi-Bob</h1>
+                        <h1 class="text-lg font-bold">Obfusi-Bob</h1>
                         <p class="text-xs text-gray-500">v1.0.0</p>
                     </div>
                 </div>
             </div>
             
-            <!-- Navigation -->
-            <nav class="flex-1 p-4 space-y-1 overflow-y-auto hide-scrollbar">
-                <a href="#" class="sidebar-item active flex items-center space-x-3 px-4 py-3 rounded-xl" data-page="dashboard">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                    </svg>
-                    <span class="font-medium">Dashboard</span>
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="#" class="nav-item active flex items-center space-x-3 px-4 py-3 rounded-xl" data-page="analyze">
+                    <span>📊</span>
+                    <span class="font-medium">Analyze Code</span>
                 </a>
-                
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-600" data-page="analyze">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    <span class="font-medium">Analyze</span>
-                </a>
-                
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-600" data-page="obfuscate">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                    </svg>
+                <a href="#" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-600" data-page="obfuscate">
+                    <span>🔒</span>
                     <span class="font-medium">Obfuscate</span>
                 </a>
-                
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-600" data-page="consultant">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                    </svg>
-                    <span class="font-medium">AI Consultant</span>
+                <a href="#" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-600" data-page="recommendations">
+                    <span>💡</span>
+                    <span class="font-medium">AI Recommendations</span>
                 </a>
-                
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-600" data-page="history">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
+                <a href="#" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-600" data-page="history">
+                    <span>📜</span>
                     <span class="font-medium">History</span>
-                </a>
-                
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-600" data-page="settings">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    <span class="font-medium">Settings</span>
                 </a>
             </nav>
             
-            <!-- User Profile -->
-            <div class="p-4 border-t border-gray-100">
-                <div class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors" id="userProfile">
-                    <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        DU
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-900 truncate" id="userName">Demo User</p>
-                        <p class="text-xs text-gray-500 truncate" id="userRole">Security Engineer</p>
-                    </div>
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
+            <div class="p-4 border-t">
+                <button id="logoutBtn" class="w-full btn-secondary text-sm">Logout</button>
             </div>
         </aside>
         
         <!-- Main Content -->
         <main class="flex-1 flex flex-col overflow-hidden">
-            <!-- Header -->
-            <header class="bg-white border-b border-gray-100 px-8 py-4">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-900" id="pageTitle">Dashboard</h2>
-                        <p class="text-sm text-gray-500 mt-1" id="pageSubtitle">Overview of your obfuscation projects</p>
-                    </div>
-                    
-                    <div class="flex items-center space-x-4">
-                        <!-- Search -->
-                        <div class="relative">
-                            <input 
-                                type="text" 
-                                placeholder="Search..." 
-                                class="pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                            />
-                            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                        </div>
-                        
-                        <!-- Notifications -->
-                        <button class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                            </svg>
-                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
-                        
-                        <!-- Logout -->
-                        <button id="logoutBtn" class="btn-secondary px-4 py-2 rounded-xl font-medium text-gray-700">
-                            Logout
-                        </button>
-                    </div>
-                </div>
+            <header class="bg-white border-b px-8 py-4">
+                <h2 class="text-2xl font-bold" id="pageTitle">Analyze Code</h2>
+                <p class="text-sm text-gray-500" id="pageSubtitle">Upload and analyze LLVM IR files</p>
             </header>
             
-            <!-- Page Content -->
-            <div class="flex-1 overflow-y-auto p-8 hide-scrollbar" id="pageContent">
-                <!-- Dashboard Page (Default) -->
-                <div id="dashboardPage" class="space-y-6 fade-in">
-                    <!-- Stats Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <!-- Stat Card 1 -->
-                        <div class="card p-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                </div>
-                                <span class="status-badge status-success">+12%</span>
-                            </div>
-                            <h3 class="text-2xl font-bold text-gray-900">24</h3>
-                            <p class="text-sm text-gray-500 mt-1">Files Analyzed</p>
-                        </div>
-                        
-                        <!-- Stat Card 2 -->
-                        <div class="card p-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                    </svg>
-                                </div>
-                                <span class="status-badge status-success">+8%</span>
-                            </div>
-                            <h3 class="text-2xl font-bold text-gray-900">18</h3>
-                            <p class="text-sm text-gray-500 mt-1">Obfuscated</p>
-                        </div>
-                        
-                        <!-- Stat Card 3 -->
-                        <div class="card p-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                                <span class="status-badge status-success">100%</span>
-                            </div>
-                            <h3 class="text-2xl font-bold text-gray-900">92%</h3>
-                            <p class="text-sm text-gray-500 mt-1">Success Rate</p>
-                        </div>
-                        
-                        <!-- Stat Card 4 -->
-                        <div class="card p-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                    </svg>
-                                </div>
-                                <span class="status-badge status-warning">-5%</span>
-                            </div>
-                            <h3 class="text-2xl font-bold text-gray-900">1.2s</h3>
-                            <p class="text-sm text-gray-500 mt-1">Avg. Time</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Charts Row -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Activity Chart -->
-                        <div class="card p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Activity Overview</h3>
-                            <canvas id="activityChart" height="200"></canvas>
-                        </div>
-                        
-                        <!-- Techniques Chart -->
-                        <div class="card p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Obfuscation Techniques</h3>
-                            <canvas id="techniquesChart" height="200"></canvas>
-                        </div>
-                    </div>
-                    
-                    <!-- Recent Activity -->
+            <div class="flex-1 overflow-y-auto p-8" id="pageContent">
+                <!-- Analyze Page -->
+                <div id="analyzePage" class="space-y-6 fade-in">
                     <div class="card p-6">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
-                            <button class="text-sm text-purple-600 hover:text-purple-700 font-medium">View All</button>
+                        <h3 class="text-lg font-semibold mb-4">Upload LLVM IR File</h3>
+                        
+                        <div class="file-drop-zone" id="fileDropZone">
+                            <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-gray-600 mb-2">Drop your .ll file here or click to browse</p>
+                            <p class="text-sm text-gray-400">Supports LLVM IR (.ll) files</p>
+                            <input type="file" id="fileInput" accept=".ll" class="hidden">
                         </div>
                         
-                        <div class="space-y-4">
-                            <!-- Activity Item -->
-                            <div class="flex items-center space-x-4 p-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                                <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900">Analyzed main.ll</p>
-                                    <p class="text-xs text-gray-500 mt-1">2 functions, 13 instructions found</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-xs text-gray-500">2 min ago</p>
-                                    <span class="status-badge status-success mt-1">Success</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Activity Item -->
-                            <div class="flex items-center space-x-4 p-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                                <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                    </svg>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900">Obfuscated with flatten pass</p>
-                                    <p class="text-xs text-gray-500 mt-1">Complexity increased by 45%</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-xs text-gray-500">5 min ago</p>
-                                    <span class="status-badge status-success mt-1">Success</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Activity Item -->
-                            <div class="flex items-center space-x-4 p-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                                <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                                    </svg>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900">AI Consultant recommendation</p>
-                                    <p class="text-xs text-gray-500 mt-1">Control Flow Flattening (92% confidence)</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-xs text-gray-500">10 min ago</p>
-                                    <span class="status-badge status-success mt-1">Completed</span>
-                                </div>
-                            </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Or paste IR code:</label>
+                            <textarea id="irCodeInput" class="w-full code-editor" placeholder="define i32 @main() {&#10;  ret i32 0&#10;}"></textarea>
+                        </div>
+                        
+                        <button id="analyzeBtn" class="btn-primary mt-4 w-full">
+                            <span id="analyzeBtnText">Analyze Code</span>
+                            <svg id="analyzeBtnLoader" class="loading w-5 h-5 ml-2 hidden inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div id="analysisResults" class="hidden">
+                        <div class="card p-6">
+                            <h3 class="text-lg font-semibold mb-4">Analysis Results</h3>
+                            <div id="analysisContent"></div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Other pages will be loaded dynamically -->
-                <div id="analyzePage" class="hidden"></div>
-                <div id="obfuscatePage" class="hidden"></div>
-                <div id="consultantPage" class="hidden"></div>
-                <div id="historyPage" class="hidden"></div>
-                <div id="settingsPage" class="hidden"></div>
+                <!-- Obfuscate Page -->
+                <div id="obfuscatePage" class="hidden space-y-6">
+                    <div class="card p-6">
+                        <h3 class="text-lg font-semibold mb-4">Obfuscation Configuration</h3>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">IR Code:</label>
+                            <textarea id="obfuscateInput" class="w-full code-editor" placeholder="Paste your LLVM IR code here..."></textarea>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Obfuscation Techniques:</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" value="flatten" class="obf-technique" checked>
+                                    <span>Control Flow Flattening</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" value="bogus" class="obf-technique">
+                                    <span>Bogus Control Flow</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" value="encrypt-strings" class="obf-technique">
+                                    <span>String Encryption</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button id="obfuscateBtn" class="btn-primary w-full">
+                            <span id="obfuscateBtnText">Apply Obfuscation</span>
+                            <svg id="obfuscateBtnLoader" class="loading w-5 h-5 ml-2 hidden inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div id="obfuscationResults" class="hidden">
+                        <div class="card p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">Obfuscated Code</h3>
+                                <button id="downloadBtn" class="btn-secondary text-sm">Download</button>
+                            </div>
+                            <div id="obfuscatedCode" class="code-editor"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recommendations Page -->
+                <div id="recommendationsPage" class="hidden space-y-6">
+                    <div class="card p-6">
+                        <h3 class="text-lg font-semibold mb-4">Get AI Recommendations</h3>
+                        <p class="text-gray-600 mb-4">Analyze your code first to get personalized recommendations</p>
+                        <button id="getRecommendationsBtn" class="btn-primary">Get Recommendations</button>
+                    </div>
+                    
+                    <div id="recommendationsResults" class="hidden space-y-4"></div>
+                </div>
+                
+                <!-- History Page -->
+                <div id="historyPage" class="hidden space-y-6">
+                    <div class="card p-6">
+                        <h3 class="text-lg font-semibold mb-4">Operation History</h3>
+                        <div id="historyContent">
+                            <p class="text-gray-500 text-center py-8">No operations yet. Start by analyzing some code!</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
     
     <script>
-        // Authentication Check
-        if (sessionStorage.getItem('obfusibob_auth') !== 'true') {
-            window.location.href = 'login.html';
+        const API_BASE = 'http://localhost:3000/api';
+        let authToken = null;
+        let currentAnalysis = null;
+        let operationHistory = [];
+        
+        // Check authentication
+        function checkAuth() {
+            authToken = sessionStorage.getItem('obfusibob_token');
+            if (!authToken) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
         }
         
-        // Load user data
-        const userData = JSON.parse(sessionStorage.getItem('obfusibob_user') || '{}');
-        document.getElementById('userName').textContent = userData.name || 'Demo User';
-        document.getElementById('userRole').textContent = userData.role || 'Security Engineer';
+        checkAuth();
         
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            sessionStorage.clear();
-            window.location.href = 'login.html';
+        // API Helper
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            
+            console.log(`API Call: ${method} ${API_BASE}${endpoint}`);
+            
+            const response = await fetch(`${API_BASE}${endpoint}`, options);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'API request failed');
+            }
+            
+            return data;
+        }
+        
+        // File Upload
+        const fileDropZone = document.getElementById('fileDropZone');
+        const fileInput = document.getElementById('fileInput');
+        const irCodeInput = document.getElementById('irCodeInput');
+        
+        fileDropZone.addEventListener('click', () => fileInput.click());
+        
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('drag-over');
         });
         
-        // Initialize Charts
-        function initCharts() {
-            // Activity Chart
-            const activityCtx = document.getElementById('activityChart').getContext('2d');
-            new Chart(activityCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Files Analyzed',
-                        data: [12, 19, 15, 25, 22, 18, 24],
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                display: true,
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Techniques Chart
-            const techniquesCtx = document.getElementById('techniquesChart').getContext('2d');
-            new Chart(techniquesCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Control Flow', 'Bogus Code', 'String Encryption', 'Other'],
-                    datasets: [{
-                        data: [35, 25, 20, 20],
-                        backgroundColor: [
-                            '#667eea',
-                            '#764ba2',
-                            '#f093fb',
-                            '#4facfe'
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
+        fileDropZone.addEventListener('dragleave', () => {
+            fileDropZone.classList.remove('drag-over');
+        });
+        
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+        
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                irCodeInput.value = e.target.result;
+                showNotification('File loaded successfully!', 'success');
+            };
+            reader.readAsText(file);
         }
         
-        // Initialize charts when page loads
-        initCharts();
+        // Analyze Code
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            const irContent = irCodeInput.value.trim();
+            
+            if (!irContent) {
+                showNotification('Please provide IR code to analyze', 'error');
+                return;
+            }
+            
+            setLoading('analyzeBtn', true);
+            
+            try {
+                const result = await apiCall('/analyze', 'POST', { irContent });
+                currentAnalysis = result;
+                displayAnalysisResults(result);
+                operationHistory.push({ type: 'analysis', data: result, timestamp: new Date() });
+                showNotification('Analysis completed successfully!', 'success');
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showNotification(error.message, 'error');
+            } finally {
+                setLoading('analyzeBtn', false);
+            }
+        });
         
-        // Page Navigation
-        const sidebarItems = document.querySelectorAll('.sidebar-item');
-        const pages = {
-            'dashboard': document.getElementById('dashboardPage'),
-            'analyze': document.getElementById('analyzePage'),
-            'obfuscate': document.getElementById('obfuscatePage'),
-            'consultant': document.getElementById('consultantPage'),
-            'history': document.getElementById('historyPage'),
-            'settings': document.getElementById('settingsPage')
-        };
+        function displayAnalysisResults(analysis) {
+            const resultsDiv = document.getElementById('analysisResults');
+            const contentDiv = document.getElementById('analysisContent');
+            
+            contentDiv.innerHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <div class="text-3xl font-bold text-purple-600">${analysis.functions?.length || 0}</div>
+                        <div class="text-sm text-gray-600 mt-1">Functions</div>
+                    </div>
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-3xl font-bold text-blue-600">${analysis.totalInstructions || 0}</div>
+                        <div class="text-sm text-gray-600 mt-1">Instructions</div>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-3xl font-bold text-green-600">${analysis.complexity || 0}</div>
+                        <div class="text-sm text-gray-600 mt-1">Complexity</div>
+                    </div>
+                    <div class="text-center p-4 bg-orange-50 rounded-lg">
+                        <div class="text-3xl font-bold text-orange-600">${analysis.functions?.filter(f => f.hasLoops).length || 0}</div>
+                        <div class="text-sm text-gray-600 mt-1">Loops Found</div>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <h4 class="font-semibold text-gray-900">Functions Detected:</h4>
+                    ${(analysis.functions || []).map(f => `
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <div class="font-medium text-gray-900">${f.name}</div>
+                            <div class="text-sm text-gray-600 mt-1">
+                                ${f.instructions} instructions • ${f.basicBlocks} basic blocks
+                                ${f.hasLoops ? ' • Contains loops' : ''}
+                                ${f.hasConditionals ? ' • Contains conditionals' : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
         
-        sidebarItems.forEach(item => {
+        // Obfuscate Code
+        document.getElementById('obfuscateBtn').addEventListener('click', async () => {
+            const irContent = document.getElementById('obfuscateInput').value.trim();
+            const techniques = Array.from(document.querySelectorAll('.obf-technique:checked')).map(cb => cb.value);
+            
+            if (!irContent) {
+                showNotification('Please provide IR code to obfuscate', 'error');
+                return;
+            }
+            
+            if (techniques.length === 0) {
+                showNotification('Please select at least one obfuscation technique', 'error');
+                return;
+            }
+            
+            setLoading('obfuscateBtn', true);
+            
+            try {
+                const result = await apiCall('/obfuscate', 'POST', { irContent, passes: techniques });
+                displayObfuscationResults(result);
+                operationHistory.push({ type: 'obfuscation', data: result, timestamp: new Date() });
+                showNotification('Obfuscation completed successfully!', 'success');
+            } catch (error) {
+                console.error('Obfuscation error:', error);
+                showNotification(error.message, 'error');
+            } finally {
+                setLoading('obfuscateBtn', false);
+            }
+        });
+        
+        function displayObfuscationResults(result) {
+            const resultsDiv = document.getElementById('obfuscationResults');
+            const codeDiv = document.getElementById('obfuscatedCode');
+            
+            codeDiv.textContent = result.obfuscatedCode;
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Download obfuscated code
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const code = document.getElementById('obfuscatedCode').textContent;
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'obfuscated.ll';
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('File downloaded!', 'success');
+        });
+        
+        // Get Recommendations
+        document.getElementById('getRecommendationsBtn').addEventListener('click', async () => {
+            if (!currentAnalysis) {
+                showNotification('Please analyze code first', 'error');
+                return;
+            }
+            
+            setLoading('getRecommendationsBtn', true);
+            
+            try {
+                const result = await apiCall('/recommendations', 'POST', { analysis: currentAnalysis });
+                displayRecommendations(result);
+                showNotification('Recommendations generated!', 'success');
+            } catch (error) {
+                console.error('Recommendations error:', error);
+                showNotification(error.message, 'error');
+            } finally {
+                setLoading('getRecommendationsBtn', false);
+            }
+        });
+        
+        function displayRecommendations(result) {
+            const resultsDiv = document.getElementById('recommendationsResults');
+            
+            resultsDiv.innerHTML = result.recommendations.map(rec => `
+                <div class="card p-6">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="text-lg font-semibold text-gray-900">${rec.technique}</h4>
+                        <span class="status-badge status-success">${(rec.confidence * 100).toFixed(0)}% confidence</span>
+                    </div>
+                    <p class="text-gray-600 mb-4">${rec.reasoning}</p>
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <div class="text-gray-500">Effectiveness</div>
+                            <div class="font-semibold">${(rec.effectiveness * 100).toFixed(0)}%</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Overhead</div>
+                            <div class="font-semibold">${rec.overhead}</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Complexity</div>
+                            <div class="font-semibold capitalize">${rec.complexity}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            resultsDiv.classList.remove('hidden');
+        }
+        
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const page = item.dataset.page;
                 
-                // Update active state
-                sidebarItems.forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
+                document.querySelectorAll('.nav-item').forEach(i => {
+                    i.classList.remove('active', 'bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white');
+                    i.classList.add('text-gray-600');
+                });
                 
-                // Hide all pages
-                Object.values(pages).forEach(p => p.classList.add('hidden'));
+                item.classList.add('active', 'bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white');
+                item.classList.remove('text-gray-600');
                 
-                // Show selected page
-                if (pages[page]) {
-                    pages[page].classList.remove('hidden');
-                    pages[page].classList.add('fade-in');
-                }
+                document.querySelectorAll('[id$="Page"]').forEach(p => p.classList.add('hidden'));
+                document.getElementById(page + 'Page').classList.remove('hidden');
                 
-                // Update header
                 const titles = {
-                    'dashboard': ['Dashboard', 'Overview of your obfuscation projects'],
-                    'analyze': ['Analyze', 'Parse and analyze LLVM IR files'],
-                    'obfuscate': ['Obfuscate', 'Apply obfuscation techniques'],
-                    'consultant': ['AI Consultant', 'Get AI-powered recommendations'],
-                    'history': ['History', 'View past obfuscation operations'],
-                    'settings': ['Settings', 'Configure your preferences']
+                    'analyze': ['Analyze Code', 'Upload and analyze LLVM IR files'],
+                    'obfuscate': ['Obfuscate', 'Apply obfuscation techniques to your code'],
+                    'recommendations': ['AI Recommendations', 'Get AI-powered technique suggestions'],
+                    'history': ['History', 'View your operation history']
                 };
                 
                 if (titles[page]) {
@@ -623,14 +464,50 @@
             });
         });
         
-        // Smooth animations
-        gsap.from('.card', {
-            y: 20,
-            opacity: 0,
-            duration: 0.5,
-            stagger: 0.1,
-            ease: 'power2.out'
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
         });
+        
+        // Helper Functions
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            const text = document.getElementById(btnId + 'Text');
+            const loader = document.getElementById(btnId + 'Loader');
+            
+            btn.disabled = loading;
+            if (loading) {
+                text.textContent = 'Processing...';
+                loader.classList.remove('hidden');
+            } else {
+                text.textContent = btn.id.includes('analyze') ? 'Analyze Code' : 
+                                  btn.id.includes('obfuscate') ? 'Apply Obfuscation' : 
+                                  'Get Recommendations';
+                loader.classList.add('hidden');
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg text-white ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 
+                'bg-blue-500'
+            } fade-in`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // Initialize
+        console.log('Obfusi-Bob Dashboard Loaded');
+        console.log('API Base:', API_BASE);
+        console.log('Auth Token:', authToken ? 'Present' : 'Missing');
     </script>
 </body>
 </html>

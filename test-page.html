@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obfusi-Bob - Connection Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Arial', sans-serif;
+        }
+        .test-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .status-item {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .status-pending { background: #fef3c7; }
+        .status-success { background: #d1fae5; }
+        .status-error { background: #fee2e2; }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1 style="font-size: 28px; font-weight: bold; margin-bottom: 10px; color: #1f2937;">
+            🛡️ Obfusi-Bob Connection Test
+        </h1>
+        <p style="color: #6b7280; margin-bottom: 30px;">
+            Testing server connectivity and animations
+        </p>
+
+        <div id="tests">
+            <div class="status-item status-pending" id="test-gsap">
+                <span>📦 GSAP Library</span>
+                <div class="spinner"></div>
+            </div>
+            <div class="status-item status-pending" id="test-server">
+                <span>🌐 Server Connection</span>
+                <div class="spinner"></div>
+            </div>
+            <div class="status-item status-pending" id="test-api">
+                <span>🔌 API Endpoints</span>
+                <div class="spinner"></div>
+            </div>
+            <div class="status-item status-pending" id="test-login">
+                <span>🔐 Login System</span>
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <button class="btn" onclick="runTests()">🔄 Run Tests Again</button>
+            <button class="btn" onclick="window.location.href='index.html'">➡️ Go to Login</button>
+        </div>
+
+        <div id="results" style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 10px; display: none;">
+            <h3 style="font-weight: bold; margin-bottom: 10px;">Test Results:</h3>
+            <pre id="results-text" style="font-size: 12px; overflow-x: auto;"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        let testResults = [];
+
+        function updateTest(id, status, message) {
+            const element = document.getElementById(id);
+            element.className = `status-item status-${status}`;
+            element.innerHTML = `
+                <span>${element.querySelector('span').textContent}</span>
+                <span>${status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳'}</span>
+            `;
+            testResults.push(`${id}: ${status} - ${message}`);
+        }
+
+        async function runTests() {
+            testResults = [];
+            document.getElementById('results').style.display = 'none';
+            
+            // Reset all tests
+            ['test-gsap', 'test-server', 'test-api', 'test-login'].forEach(id => {
+                const element = document.getElementById(id);
+                element.className = 'status-item status-pending';
+                element.innerHTML = element.innerHTML.replace(/[✅❌⏳]/, '<div class="spinner"></div>');
+            });
+
+            // Test 1: GSAP
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (typeof gsap !== 'undefined') {
+                updateTest('test-gsap', 'success', 'GSAP loaded successfully');
+                // Test animation
+                gsap.from('.test-card', { scale: 0.9, opacity: 0, duration: 0.5 });
+            } else {
+                updateTest('test-gsap', 'error', 'GSAP not loaded - check internet connection');
+            }
+
+            // Test 2: Server
+            await new Promise(resolve => setTimeout(resolve, 500));
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateTest('test-server', 'success', `Server running on port ${data.version || '1.0.0'}`);
+                } else {
+                    updateTest('test-server', 'error', `Server responded with status ${response.status}`);
+                }
+            } catch (error) {
+                updateTest('test-server', 'error', 'Cannot connect to server. Make sure it is running: node api-server-standalone.js');
+            }
+
+            // Test 3: API
+            await new Promise(resolve => setTimeout(resolve, 500));
+            try {
+                const response = await fetch(`${API_BASE}/api/stats`, {
+                    headers: { 'Authorization': 'Bearer invalid' }
+                });
+                // We expect 403 or 401, which means API is working
+                if (response.status === 401 || response.status === 403) {
+                    updateTest('test-api', 'success', 'API endpoints responding correctly');
+                } else {
+                    updateTest('test-api', 'error', `Unexpected API response: ${response.status}`);
+                }
+            } catch (error) {
+                updateTest('test-api', 'error', 'API endpoints not accessible');
+            }
+
+            // Test 4: Login
+            await new Promise(resolve => setTimeout(resolve, 500));
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'demo', password: 'demo123' })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.token) {
+                        updateTest('test-login', 'success', 'Login system working - credentials verified');
+                    } else {
+                        updateTest('test-login', 'error', 'Login response missing token');
+                    }
+                } else {
+                    updateTest('test-login', 'error', `Login failed with status ${response.status}`);
+                }
+            } catch (error) {
+                updateTest('test-login', 'error', 'Login endpoint not accessible');
+            }
+
+            // Show results
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results-text').textContent = testResults.join('\n');
+        }
+
+        // Run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 1000);
+        });
+    </script>
+</body>
+</html>

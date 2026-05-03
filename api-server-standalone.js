@@ -102,7 +102,7 @@ app.post('/api/auth/login', async (req, res) => {
             { expiresIn: rememberMe ? '30d' : '24h' }
         );
 
-        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
         sessions.set(sessionId, {
             username: user.username,
             createdAt: new Date().toISOString(),
@@ -319,7 +319,15 @@ app.get('/api/stats', authenticateToken, (req, res) => {
 
 // Serve HTML files
 app.get('/', (req, res) => {
-    res.sendFile(join(__dirname, 'login.html'));
+    res.sendFile(join(__dirname, 'login-simple.html'));
+});
+
+app.get('/index.html', (req, res) => {
+    res.sendFile(join(__dirname, 'index.html'));
+});
+
+app.get('/login', (req, res) => {
+    res.sendFile(join(__dirname, 'login-simple.html'));
 });
 
 app.get('/dashboard', (req, res) => {
