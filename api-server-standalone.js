@@ -1,6 +1,6 @@
 /**
  * Obfusi-Bob Standalone API Server
- * Simplified version that runs without MCP server dependencies
+ * Enhanced version with real IR parsing and obfuscation
  */
 
 import express from 'express';
@@ -11,6 +11,8 @@ import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
+import { parseIR } from './utils/ir-parser.js';
+import { obfuscateIR } from './utils/obfuscator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -160,29 +162,30 @@ app.post('/api/analyze', authenticateToken, (req, res) => {
             return res.status(400).json({ error: 'IR content required' });
         }
 
-        // Mock analysis
+        // Real IR parsing and analysis
+        const parsedData = parseIR(irContent);
+        
         const analysis = {
             id: `analysis_${Date.now()}`,
             fileName: 'uploaded.ll',
             timestamp: new Date().toISOString(),
-            functions: [
-                {
-                    name: 'main',
-                    instructions: 15,
-                    basicBlocks: 3,
-                    hasLoops: true,
-                    hasConditionals: true
-                }
-            ],
-            totalInstructions: 15,
-            complexity: 12
+            metadata: parsedData.metadata,
+            functions: parsedData.functions,
+            globalVariables: parsedData.globalVariables,
+            summary: parsedData.summary,
+            totalInstructions: parsedData.summary.totalInstructions,
+            complexity: parsedData.summary.totalComplexity
         };
 
         analyses.push(analysis);
         res.json(analysis);
     } catch (error) {
         console.error('Analysis error:', error);
-        res.status(500).json({ error: 'Analysis failed' });
+        res.status(500).json({
+            error: 'Analysis failed',
+            details: error.message,
+            hint: 'Please ensure the IR code is valid LLVM IR format'
+        });
     }
 });
 
@@ -195,27 +198,52 @@ app.post('/api/obfuscate', authenticateToken, (req, res) => {
             return res.status(400).json({ error: 'IR content and passes required' });
         }
 
-        // Mock obfuscation
+        const startTime = Date.now();
+        
+        // Parse original code for complexity
+        const originalAnalysis = parseIR(irContent);
+        const complexityBefore = originalAnalysis.summary.totalComplexity;
+        
+        // Apply obfuscation techniques
+        const obfuscationResult = obfuscateIR(irContent, passes);
+        
+        // Parse obfuscated code for new complexity
+        const obfuscatedAnalysis = parseIR(obfuscationResult.obfuscatedCode);
+        const complexityAfter = obfuscatedAnalysis.summary.totalComplexity;
+        
+        const executionTime = Date.now() - startTime;
+
         const operation = {
             id: `op_${Date.now()}`,
             fileName: 'uploaded.ll',
-            passName: passes[0] || 'flatten',
+            passName: passes.join(', '),
             status: 'success',
             timestamp: new Date().toISOString(),
-            executionTime: Math.floor(Math.random() * 500) + 100,
-            complexityBefore: 12,
-            complexityAfter: 28
+            executionTime,
+            complexityBefore,
+            complexityAfter,
+            appliedTechniques: obfuscationResult.appliedTechniques,
+            transformations: obfuscationResult.transformations
         };
 
         operations.push(operation);
         res.json({
             success: true,
             operation,
-            obfuscatedCode: `; Obfuscated with ${passes.join(', ')}\n${irContent}`
+            obfuscatedCode: obfuscationResult.obfuscatedCode,
+            stats: {
+                linesAdded: obfuscationResult.transformations.linesAdded,
+                expansionRatio: obfuscationResult.transformations.expansionRatio,
+                complexityIncrease: Math.round(((complexityAfter - complexityBefore) / complexityBefore) * 100)
+            }
         });
     } catch (error) {
         console.error('Obfuscation error:', error);
-        res.status(500).json({ error: 'Obfuscation failed' });
+        res.status(500).json({
+            error: 'Obfuscation failed',
+            details: error.message,
+            hint: 'Please ensure the IR code is valid and try with different techniques'
+        });
     }
 });
 
@@ -319,15 +347,11 @@ app.get('/api/stats', authenticateToken, (req, res) => {
 
 // Serve HTML files
 app.get('/', (req, res) => {
-    res.sendFile(join(__dirname, 'login-simple.html'));
-});
-
-app.get('/index.html', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(join(__dirname, 'login-simple.html'));
+    res.sendFile(join(__dirname, 'index.html'));
 });
 
 app.get('/dashboard', (req, res) => {
